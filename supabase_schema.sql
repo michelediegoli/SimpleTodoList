@@ -150,18 +150,26 @@ create policy lists_modify_owner_or_admin_delete on lists
   );
 
 -- list_members policies
+-- IMPORTANT: avoid querying list_members itself inside its own policies,
+-- otherwise Postgres can recurse infinitely while evaluating RLS.
 drop policy if exists list_members_select_member_or_admin on list_members;
 create policy list_members_select_member_or_admin on list_members
   for select using (
-    public.is_admin() OR
-    EXISTS (SELECT 1 FROM list_members lm2 WHERE lm2.list_id = list_members.list_id AND lm2.user_id = auth.uid())
+    public.is_admin() OR auth.uid() = user_id
   );
 
 drop policy if exists list_members_insert_owner_or_admin on list_members;
 create policy list_members_insert_owner_or_admin on list_members
   for insert with check (
-    public.is_admin() OR
-    EXISTS (SELECT 1 FROM list_members lm WHERE lm.list_id = list_id AND lm.user_id = auth.uid() AND lm.role = 'owner')
+    public.is_admin() OR (
+      auth.uid() = user_id AND
+      EXISTS (
+        SELECT 1
+        FROM lists l
+        WHERE l.id = list_id
+          AND l.created_by = auth.uid()
+      )
+    )
   );
 
 -- list_members_update_owner_or_admin: separate UPDATE e DELETE
@@ -171,17 +179,35 @@ drop policy if exists list_members_update_owner_or_admin_delete on list_members;
 create policy list_members_update_owner_or_admin_update on list_members
   for update using (
     public.is_admin() OR
-    EXISTS (SELECT 1 FROM list_members lm WHERE lm.list_id = list_members.list_id AND lm.user_id = auth.uid() AND lm.role = 'owner')
+    auth.uid() = user_id OR
+    EXISTS (
+      SELECT 1
+      FROM lists l
+      WHERE l.id = list_members.list_id
+        AND l.created_by = auth.uid()
+    )
   )
   with check (
     public.is_admin() OR
-    EXISTS (SELECT 1 FROM list_members lm WHERE lm.list_id = list_id AND lm.user_id = auth.uid() AND lm.role = 'owner')
+    auth.uid() = user_id OR
+    EXISTS (
+      SELECT 1
+      FROM lists l
+      WHERE l.id = list_id
+        AND l.created_by = auth.uid()
+    )
   );
 
 create policy list_members_update_owner_or_admin_delete on list_members
   for delete using (
     public.is_admin() OR
-    EXISTS (SELECT 1 FROM list_members lm WHERE lm.list_id = list_members.list_id AND lm.user_id = auth.uid() AND lm.role = 'owner')
+    auth.uid() = user_id OR
+    EXISTS (
+      SELECT 1
+      FROM lists l
+      WHERE l.id = list_members.list_id
+        AND l.created_by = auth.uid()
+    )
   );
 
 -- Tasks policies

@@ -8,11 +8,12 @@
     "start": "next start -p 3000"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.31.0",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.3",
+    "dayjs": "^1.11.23",
     "next": "13.4.7",
     "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "dayjs": "^1.11.9"
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.14",
