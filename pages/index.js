@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import Auth from '../components/Auth'
+import Auth, { PasswordSetup } from '../components/Auth'
 import TaskForm from '../components/TaskForm'
 import TaskItem from '../components/TaskItem'
 
@@ -19,23 +19,48 @@ export default function Home() {
   const [tasks, setTasks] = useState([])
   const [profiles, setProfiles] = useState([]) // for assignee select
   const [loading, setLoading] = useState(true)
+  const [authReady, setAuthReady] = useState(false)
+  const [needsPassword, setNeedsPassword] = useState(false)
+  const [authMessage, setAuthMessage] = useState('')
   const [filters, setFilters] = useState(initialFilters)
 
   useEffect(() => {
+    const getAuthFlowFromUrl = () => {
+      const query = new URLSearchParams(window.location.search)
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+      return query.get('reset') === '1' ? 'recovery' : query.get('type') || hash.get('type')
+    }
+
+    const getAuthErrorFromUrl = () => {
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+      if (hash.get('error_code') === 'otp_expired') {
+        return 'Il link per reimpostare la password è scaduto o è già stato utilizzato. Richiedi un nuovo link.'
+      }
+      return hash.get('error_description')?.replace(/\+/g, ' ') || ''
+    }
+
     // auth state
     const getSession = async () => {
       const { data } = await supabase.auth.getUser()
       setUser(data.user ?? null)
+      setAuthMessage(getAuthErrorFromUrl())
+      if (data.user && ['invite', 'recovery'].includes(getAuthFlowFromUrl())) {
+        setNeedsPassword(true)
+      }
+      setAuthReady(true)
     }
     getSession()
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user && (event === 'PASSWORD_RECOVERY' || ['invite', 'recovery'].includes(getAuthFlowFromUrl()))) {
+        setNeedsPassword(true)
+      }
     })
     return () => listener.subscription.unsubscribe()
   }, [])
 
   useEffect(() => {
-    if (!user) return
+    if (!user || needsPassword) return
     fetchProfiles()
     fetchTasks()
 
@@ -64,7 +89,7 @@ export default function Home() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [user])
+  }, [user, needsPassword])
 
   async function fetchProfiles() {
     const { data, error } = await supabase
@@ -105,8 +130,21 @@ export default function Home() {
     return matchesQuery && matchesStatus && matchesAssignee && matchesPriority && matchesDueDate
   })
 
+  if (!authReady) {
+    return <div className="min-h-screen flex items-center justify-center">Caricamento...</div>
+  }
+
   if (!user) {
-    return <Auth />
+    return <Auth initialMessage={authMessage} />
+  }
+
+  if (needsPassword) {
+    return (
+      <PasswordSetup onComplete={() => {
+        window.history.replaceState({}, document.title, window.location.pathname)
+        setNeedsPassword(false)
+      }} />
+    )
   }
 
   return (
@@ -194,9 +232,9 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="overflow-x-auto bg-white rounded shadow">
-            <table className="min-w-full text-left">
-              <thead className="bg-gray-100">
+          <div className="overflow-hidden bg-white rounded shadow">
+            <table className="w-full table-fixed text-left">
+              <thead className="hidden bg-gray-100 md:table-header-group">
                 <tr>
                   <th className="px-3 py-3 font-semibold">Titolo</th>
                   <th className="px-3 py-3 font-semibold">Descrizione</th>
