@@ -97,10 +97,6 @@ export default function Auth({ initialMessage = '' }) {
     else setMessage('Controlla la tua email per reimpostare la password.')
   }
 
-  async function signInWithGoogle() {
-    await supabase.auth.signInWithOAuth({ provider: 'google' })
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded shadow p-6">
@@ -129,12 +125,6 @@ export default function Auth({ initialMessage = '' }) {
             Registrati
           </button>
         </div>
-
-        <div className="my-3 text-center">oppure</div>
-
-        <button onClick={signInWithGoogle} className="w-full px-4 py-2 bg-red-600 text-white rounded">
-          Accedi con Google
-        </button>
 
         {message && <div className="mt-3 text-sm text-red-600">{message}</div>}
       </div>
