@@ -53,7 +53,7 @@ create table if not exists tasks (
   list_id uuid references lists (id) on delete cascade,
   title text not null,
   description text,
-  assignee uuid references auth.users (id),
+  assignee text,
   created_by uuid references auth.users (id),
   due_date date,
   priority task_priority default 'medium',
@@ -68,7 +68,11 @@ create table if not exists tasks (
 alter table tasks add column if not exists list_id uuid references lists (id) on delete cascade;
 alter table tasks add column if not exists title text;
 alter table tasks add column if not exists description text;
-alter table tasks add column if not exists assignee uuid references auth.users (id);
+alter table tasks add column if not exists assignee text;
+
+-- L'assegnatario e' il nome scelto nell'app, non l'UUID dell'utente Auth.
+alter table tasks drop constraint if exists tasks_assignee_fkey;
+alter table tasks alter column assignee type text using assignee::text;
 alter table tasks add column if not exists created_by uuid references auth.users (id);
 alter table tasks add column if not exists due_date date;
 alter table tasks add column if not exists priority task_priority default 'medium';
@@ -145,7 +149,15 @@ stable
 security definer
 set search_path = public, auth
 language sql as $$
-  select u.id, p.full_name, u.email
+  select
+    u.id,
+    coalesce(
+      nullif(p.full_name, ''),
+      nullif(u.raw_user_meta_data->>'full_name', ''),
+      nullif(u.raw_user_meta_data->>'name', ''),
+      split_part(u.email, '@', 1)
+    ) as full_name,
+    u.email
   from auth.users u
   left join public.profiles p on p.id = u.id
   where (
@@ -165,7 +177,12 @@ language sql as $$
         and l.created_by = u.id
     )
   )
-  order by coalesce(nullif(p.full_name, ''), u.email), u.email;
+  order by coalesce(
+    nullif(p.full_name, ''),
+    nullif(u.raw_user_meta_data->>'full_name', ''),
+    nullif(u.raw_user_meta_data->>'name', ''),
+    u.email
+  ), u.email;
 $$;
 
 grant execute on function public.get_assignable_users(uuid) to authenticated;

@@ -4,9 +4,8 @@ import dayjs from 'dayjs'
 
 export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
   const [editing, setEditing] = useState(false)
-  const assignee = profiles.find(p => p.id === task.assignee)
-  const assigneeLabel = assignee?.full_name || assignee?.email || assignee?.id
-  const isOwnerOrAssignee = task.assignee === currentUser.id || task.created_by === currentUser.id
+  const assigneeLabel = task.assignee || 'Altro'
+  const isOwnerOrAssignee = task.created_by === currentUser.id
 
   async function updateStatus(newStatus) {
     const { error } = await supabase
@@ -59,7 +58,7 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
           {task.priority === 'high' && <span className="ml-2 text-red-600 text-xs">Alta</span>}
         </td>
         <td className="px-3 py-3 text-sm text-gray-700 break-words">{task.description || '—'}</td>
-        <td className="px-3 py-3 text-sm">{assignee ? assigneeLabel : 'Non assegnata'}</td>
+        <td className="px-3 py-3 text-sm">{assigneeLabel}</td>
         <td className="px-3 py-3 text-sm whitespace-nowrap">{task.due_date ? dayjs(task.due_date).format('DD/MM/YYYY') : '—'}</td>
         <td className="px-3 py-3 text-sm capitalize">{task.priority}</td>
         <td className="px-3 py-3 text-sm capitalize">{task.status}</td>
@@ -79,7 +78,7 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <div>
                 <dt className="text-gray-500">Assegnatario</dt>
-                <dd className="break-words">{assignee ? assigneeLabel : 'Non assegnata'}</dd>
+                <dd className="break-words">{assigneeLabel}</dd>
               </div>
               <div>
                 <dt className="text-gray-500">Scadenza</dt>
@@ -111,11 +110,7 @@ function TaskEditor({ task, profiles, onCancel, onSaved }) {
   const [priority, setPriority] = useState(task.priority)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const assigneeNames = ['Erminio', 'Fabio', 'Gloria', 'Laura']
-  const assigneeOptions = assigneeNames.map(name => ({
-    name,
-    profile: profiles.find(profile => profile.full_name?.trim().toLowerCase() === name.toLowerCase())
-  }))
+  const assigneeNames = ['Erminio', 'Fabio', 'Gloria', 'Laura', 'Altro']
 
   async function saveTask(event) {
     event.preventDefault()
@@ -131,7 +126,7 @@ function TaskEditor({ task, profiles, onCancel, onSaved }) {
       .update({
         title: title.trim(),
         description: description.trim() || null,
-        assignee: assignee || null,
+        assignee,
         due_date: dueDate || null,
         priority
       })
@@ -159,8 +154,7 @@ function TaskEditor({ task, profiles, onCancel, onSaved }) {
           <input value={title} onChange={event => setTitle(event.target.value)} className="border rounded px-3 py-2 md:col-span-2" aria-label="Titolo" />
           <input value={description} onChange={event => setDescription(event.target.value)} placeholder="Descrizione" className="border rounded px-3 py-2 md:col-span-2" aria-label="Descrizione" />
           <select value={assignee} onChange={event => setAssignee(event.target.value)} className="border rounded px-3 py-2" aria-label="Assegnato a">
-            <option value="">Altro</option>
-            {assigneeOptions.map(({ name, profile }) => <option key={name} value={profile?.id || ''}>{name}</option>)}
+            {assigneeNames.map(name => <option key={name} value={name}>{name}</option>)}
           </select>
           <input type="date" value={dueDate} onChange={event => setDueDate(event.target.value)} className="border rounded px-3 py-2" aria-label="Scadenza" />
           <select value={priority} onChange={event => setPriority(event.target.value)} className="border rounded px-3 py-2" aria-label="Priorità">

@@ -3,21 +3,16 @@ import { supabase } from '../lib/supabaseClient'
 
 const LIST_ID = process.env.NEXT_PUBLIC_SUPABASE_LIST_ID
 const isListConfigured = Boolean(LIST_ID) && LIST_ID !== 'the-list-uuid-to-use'
-const assigneeNames = ['Erminio', 'Fabio', 'Gloria', 'Laura']
+const assigneeNames = ['Erminio', 'Fabio', 'Gloria', 'Laura', 'Altro']
 
 export default function TaskForm({ user, profiles, onCreated }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [assignee, setAssignee] = useState('')
+  const [assignee, setAssignee] = useState('Altro')
   const [dueDate, setDueDate] = useState('')
   const [priority, setPriority] = useState('medium')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const assigneeOptions = assigneeNames
-    .map(name => ({
-      name,
-      profile: profiles.find(profile => profile.full_name?.trim().toLowerCase() === name.toLowerCase())
-    }))
 
   async function handleCreate(e) {
     e.preventDefault()
@@ -43,7 +38,7 @@ export default function TaskForm({ user, profiles, onCreated }) {
         list_id: LIST_ID,
         title: title.trim(),
         description: description.trim() || null,
-        assignee: assignee || null,
+        assignee,
         due_date: dueDate || null,
         priority,
         status: 'todo',
@@ -57,7 +52,7 @@ export default function TaskForm({ user, profiles, onCreated }) {
       return
     }
 
-    setTitle(''); setDescription(''); setAssignee(''); setDueDate(''); setPriority('medium')
+    setTitle(''); setDescription(''); setAssignee('Altro'); setDueDate(''); setPriority('medium')
     onCreated && onCreated()
   }
 
@@ -82,10 +77,7 @@ export default function TaskForm({ user, profiles, onCreated }) {
 
       <div className="flex flex-wrap gap-2 mt-2">
         <select value={assignee} onChange={e => setAssignee(e.target.value)} className="border rounded px-3 py-2 flex-1 min-w-0">
-          <option value="">Altro</option>
-          {assigneeOptions.map(({ name, profile }) => (
-            <option key={name} value={profile?.id || ''}>{name}</option>
-          ))}
+          {assigneeNames.map(name => <option key={name} value={name}>{name}</option>)}
         </select>
         <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="border rounded px-3 py-2 flex-1 min-w-0 md:flex-none" />
         <button type="submit" className="basis-full px-4 py-2 bg-green-600 text-white rounded disabled:opacity-60 md:basis-auto" disabled={saving || !isListConfigured}>

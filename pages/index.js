@@ -6,7 +6,7 @@ import TaskItem from '../components/TaskItem'
 
 const LIST_ID = process.env.NEXT_PUBLIC_SUPABASE_LIST_ID
 const isListConfigured = Boolean(LIST_ID) && LIST_ID !== 'the-list-uuid-to-use'
-const assigneeNames = ['Erminio', 'Fabio', 'Gloria', 'Laura']
+const assigneeNames = ['Erminio', 'Fabio', 'Gloria', 'Laura', 'Altro']
 const initialFilters = {
   query: '',
   status: 'all',
@@ -111,12 +111,6 @@ export default function Home() {
     setLoading(false)
   }
 
-  const assigneeOptions = assigneeNames
-    .map(name => ({
-      name,
-      profile: profiles.find(profile => profile.full_name?.trim().toLowerCase() === name.toLowerCase())
-    }))
-
   const filteredTasks = tasks.filter(task => {
     const q = filters.query.trim().toLowerCase()
     const matchesQuery = !q || [
@@ -206,9 +200,7 @@ export default function Home() {
                 className="border rounded px-3 py-2"
               >
                 <option value="all">Tutti gli assegnatari</option>
-                {assigneeOptions.map(({ name, profile }) => (
-                  <option key={name} value={profile?.id || ''}>{name}</option>
-                ))}
+                {assigneeNames.map(name => <option key={name} value={name}>{name}</option>)}
               </select>
 
               <select
