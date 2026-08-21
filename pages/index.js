@@ -190,9 +190,9 @@ export default function Home() {
                 className="border rounded px-3 py-2"
               >
                 <option value="all">Tutti gli stati</option>
-                <option value="todo">todo</option>
-                <option value="in_progress">in_progress</option>
-                <option value="completed">completed</option>
+                <option value="todo">Da fare</option>
+                <option value="in_progress">In corso</option>
+                <option value="completed">Completata</option>
               </select>
 
               <select
@@ -210,9 +210,9 @@ export default function Home() {
                 className="border rounded px-3 py-2"
               >
                 <option value="all">Tutte le priorità</option>
-                <option value="low">low</option>
-                <option value="medium">medium</option>
-                <option value="high">high</option>
+                <option value="low">Bassa</option>
+                <option value="medium">Media</option>
+                <option value="high">Alta</option>
               </select>
 
               <input
@@ -226,7 +226,7 @@ export default function Home() {
                 onClick={() => setFilters(initialFilters)}
                 className="border border-gray-300 rounded px-3 py-2 text-gray-700 bg-gray-100"
               >
-                Reset
+                Reimposta
               </button>
             </div>
           </div>

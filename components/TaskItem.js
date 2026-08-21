@@ -3,6 +3,18 @@ import { supabase } from '../lib/supabaseClient'
 import { assigneeNames } from '../lib/assignees'
 import dayjs from 'dayjs'
 
+const statusLabels = {
+  todo: 'Da fare',
+  in_progress: 'In corso',
+  completed: 'Completata'
+}
+
+const priorityLabels = {
+  low: 'Bassa',
+  medium: 'Media',
+  high: 'Alta'
+}
+
 export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
   const [editing, setEditing] = useState(false)
   const assigneeLabel = task.assignee || 'Altro'
@@ -61,8 +73,8 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
         <td className="px-3 py-3 text-sm text-gray-700 break-words">{task.description || '—'}</td>
         <td className="px-3 py-3 text-sm">{assigneeLabel}</td>
         <td className="px-3 py-3 text-sm whitespace-nowrap">{task.due_date ? dayjs(task.due_date).format('DD/MM/YYYY') : '—'}</td>
-        <td className="px-3 py-3 text-sm capitalize">{task.priority}</td>
-        <td className="px-3 py-3 text-sm capitalize">{task.status}</td>
+        <td className="px-3 py-3 text-sm">{priorityLabels[task.priority] || task.priority}</td>
+        <td className="px-3 py-3 text-sm">{statusLabels[task.status] || task.status}</td>
         <td className="px-3 py-3">
           {actions}
         </td>
@@ -87,11 +99,11 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
               </div>
               <div>
                 <dt className="text-gray-500">Priorità</dt>
-                <dd className="capitalize">{task.priority}</dd>
+                <dd>{priorityLabels[task.priority] || task.priority}</dd>
               </div>
               <div>
                 <dt className="text-gray-500">Stato</dt>
-                <dd className="capitalize">{task.status}</dd>
+                <dd>{statusLabels[task.status] || task.status}</dd>
               </div>
             </dl>
             {actions}
