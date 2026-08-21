@@ -6,6 +6,7 @@ import TaskItem from '../components/TaskItem'
 
 const LIST_ID = process.env.NEXT_PUBLIC_SUPABASE_LIST_ID
 const isListConfigured = Boolean(LIST_ID) && LIST_ID !== 'the-list-uuid-to-use'
+const assigneeNames = ['Erminio', 'Fabio', 'Gloria', 'Laura']
 const initialFilters = {
   query: '',
   status: 'all',
@@ -93,8 +94,7 @@ export default function Home() {
 
   async function fetchProfiles() {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, avatar_url, is_admin')
+      .rpc('get_assignable_users', { target_list_id: LIST_ID })
     if (error) console.error(error)
     else setProfiles(data || [])
   }
@@ -110,6 +110,12 @@ export default function Home() {
     else setTasks(data || [])
     setLoading(false)
   }
+
+  const assigneeOptions = assigneeNames
+    .map(name => ({
+      name,
+      profile: profiles.find(profile => profile.full_name?.trim().toLowerCase() === name.toLowerCase())
+    }))
 
   const filteredTasks = tasks.filter(task => {
     const q = filters.query.trim().toLowerCase()
@@ -200,8 +206,8 @@ export default function Home() {
                 className="border rounded px-3 py-2"
               >
                 <option value="all">Tutti gli assegnatari</option>
-                {profiles.map(p => (
-                  <option key={p.id} value={p.id}>{p.full_name || p.id}</option>
+                {assigneeOptions.map(({ name, profile }) => (
+                  <option key={name} value={profile?.id || ''}>{name}</option>
                 ))}
               </select>
 

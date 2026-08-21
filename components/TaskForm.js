@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 
 const LIST_ID = process.env.NEXT_PUBLIC_SUPABASE_LIST_ID
 const isListConfigured = Boolean(LIST_ID) && LIST_ID !== 'the-list-uuid-to-use'
+const assigneeNames = ['Erminio', 'Fabio', 'Gloria', 'Laura']
 
 export default function TaskForm({ user, profiles, onCreated }) {
   const [title, setTitle] = useState('')
@@ -12,6 +13,11 @@ export default function TaskForm({ user, profiles, onCreated }) {
   const [priority, setPriority] = useState('medium')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const assigneeOptions = assigneeNames
+    .map(name => ({
+      name,
+      profile: profiles.find(profile => profile.full_name?.trim().toLowerCase() === name.toLowerCase())
+    }))
 
   async function handleCreate(e) {
     e.preventDefault()
@@ -74,13 +80,15 @@ export default function TaskForm({ user, profiles, onCreated }) {
 
       <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descrizione (opzionale)" className="w-full border rounded px-3 py-2 mt-2" />
 
-      <div className="flex gap-2 mt-2">
-        <select value={assignee} onChange={e => setAssignee(e.target.value)} className="border rounded px-3 py-2 flex-1">
-          <option value="">Assegna a (nessuno)</option>
-          {profiles.map(p => <option key={p.id} value={p.id}>{p.full_name || p.id}</option>)}
+      <div className="flex flex-wrap gap-2 mt-2">
+        <select value={assignee} onChange={e => setAssignee(e.target.value)} className="border rounded px-3 py-2 flex-1 min-w-0">
+          <option value="">Altro</option>
+          {assigneeOptions.map(({ name, profile }) => (
+            <option key={name} value={profile?.id || ''}>{name}</option>
+          ))}
         </select>
-        <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="border rounded px-3 py-2" />
-        <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-60" disabled={saving || !isListConfigured}>
+        <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="border rounded px-3 py-2 flex-1 min-w-0 md:flex-none" />
+        <button type="submit" className="basis-full px-4 py-2 bg-green-600 text-white rounded disabled:opacity-60 md:basis-auto" disabled={saving || !isListConfigured}>
           {saving ? 'Creazione...' : 'Crea'}
         </button>
       </div>

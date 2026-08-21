@@ -139,6 +139,37 @@ language sql as $$
   );
 $$;
 
+create or replace function public.get_assignable_users(target_list_id uuid)
+returns table (id uuid, full_name text, email text)
+stable
+security definer
+set search_path = public, auth
+language sql as $$
+  select u.id, p.full_name, u.email
+  from auth.users u
+  left join public.profiles p on p.id = u.id
+  where (
+    public.is_admin() or
+    public.is_list_member(target_list_id, auth.uid())
+  )
+  and (
+    exists (
+      select 1
+      from public.list_members lm
+      where lm.list_id = target_list_id
+        and lm.user_id = u.id
+    ) or exists (
+      select 1
+      from public.lists l
+      where l.id = target_list_id
+        and l.created_by = u.id
+    )
+  )
+  order by coalesce(nullif(p.full_name, ''), u.email), u.email;
+$$;
+
+grant execute on function public.get_assignable_users(uuid) to authenticated;
+
 -- 6) Abilitazione RLS
 alter table profiles enable row level security;
 alter table lists enable row level security;
@@ -274,18 +305,15 @@ create policy tasks_insert_member_or_admin on tasks
   );
 
 drop policy if exists tasks_update_assignee_creator_or_editor_or_admin on tasks;
-create policy tasks_update_assignee_creator_or_editor_or_admin on tasks
+drop policy if exists tasks_update_list_member_or_admin on tasks;
+create policy tasks_update_list_member_or_admin on tasks
   for update using (
     public.is_admin() OR
-    assignee = auth.uid() OR
-    created_by = auth.uid() OR
-    EXISTS (SELECT 1 FROM list_members lm WHERE lm.list_id = tasks.list_id AND lm.user_id = auth.uid() AND lm.role IN ('owner','editor'))
+    public.is_list_member(tasks.list_id)
   )
   with check (
     public.is_admin() OR
-    assignee = auth.uid() OR
-    created_by = auth.uid() OR
-    EXISTS (SELECT 1 FROM list_members lm WHERE lm.list_id = list_id AND lm.user_id = auth.uid() AND lm.role IN ('owner','editor'))
+    public.is_list_member(list_id)
   );
 
 drop policy if exists tasks_delete_owner_or_admin on tasks;
