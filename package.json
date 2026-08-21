@@ -11,7 +11,7 @@
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
     "dayjs": "^1.11.23",
-    "next": "13.4.7",
+    "next": "15.5.23",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
