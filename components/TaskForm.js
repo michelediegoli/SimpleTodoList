@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { getAssigneeNames } from '../lib/assignees'
 
 const LIST_ID = process.env.NEXT_PUBLIC_SUPABASE_LIST_ID
 const isListConfigured = Boolean(LIST_ID) && LIST_ID !== 'the-list-uuid-to-use'
-const assigneeNames = ['Erminio', 'Fabio', 'Gloria', 'Laura', 'Altro']
 
 export default function TaskForm({ user, profiles, onCreated }) {
   const [title, setTitle] = useState('')
@@ -13,6 +13,7 @@ export default function TaskForm({ user, profiles, onCreated }) {
   const [priority, setPriority] = useState('medium')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const assigneeNames = getAssigneeNames(profiles)
 
   async function handleCreate(e) {
     e.preventDefault()

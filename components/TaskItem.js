@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { getAssigneeNames } from '../lib/assignees'
 import dayjs from 'dayjs'
 
 export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
@@ -110,7 +111,7 @@ function TaskEditor({ task, profiles, onCancel, onSaved }) {
   const [priority, setPriority] = useState(task.priority)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const assigneeNames = ['Erminio', 'Fabio', 'Gloria', 'Laura', 'Altro']
+  const assigneeNames = getAssigneeNames(profiles, task.assignee)
 
   async function saveTask(event) {
     event.preventDefault()

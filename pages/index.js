@@ -3,10 +3,10 @@ import { supabase } from '../lib/supabaseClient'
 import Auth, { PasswordSetup } from '../components/Auth'
 import TaskForm from '../components/TaskForm'
 import TaskItem from '../components/TaskItem'
+import { getAssigneeNames } from '../lib/assignees'
 
 const LIST_ID = process.env.NEXT_PUBLIC_SUPABASE_LIST_ID
 const isListConfigured = Boolean(LIST_ID) && LIST_ID !== 'the-list-uuid-to-use'
-const assigneeNames = ['Erminio', 'Fabio', 'Gloria', 'Laura', 'Altro']
 const initialFilters = {
   query: '',
   status: 'all',
@@ -24,6 +24,7 @@ export default function Home() {
   const [needsPassword, setNeedsPassword] = useState(false)
   const [authMessage, setAuthMessage] = useState('')
   const [filters, setFilters] = useState(initialFilters)
+  const assigneeNames = getAssigneeNames(profiles)
 
   useEffect(() => {
     const getAuthFlowFromUrl = () => {
