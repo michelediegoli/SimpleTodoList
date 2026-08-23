@@ -69,6 +69,7 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
         <td className="px-3 py-3 font-medium">
           {task.title}
           {task.priority === 'high' && <span className="ml-2 text-red-600 text-xs">Alta</span>}
+          {task.recurrence_rule === 'monthly' && <span className="ml-2 text-blue-600 text-xs">Mensile</span>}
         </td>
         <td className="px-3 py-3 text-sm text-gray-700 break-words">{task.description || '—'}</td>
         <td className="px-3 py-3 text-sm">{assigneeLabel}</td>
@@ -85,7 +86,11 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
           <article className="space-y-3">
             <div className="flex items-start justify-between gap-3">
               <h3 className="font-semibold break-words">{task.title}</h3>
-              {task.priority === 'high' && <span className="shrink-0 text-xs font-medium text-red-600">Alta</span>}
+              <div className="shrink-0 text-xs font-medium">
+                {task.priority === 'high' && <span className="mr-2 text-red-600">Alta</span>}
+                {task.recurrence_rule === 'weekly' && <span className="text-blue-600">Settimanale</span>}
+                {task.recurrence_rule === 'monthly' && <span className="text-blue-600">Mensile</span>}
+              </div>
             </div>
             <p className="text-sm text-gray-700 break-words">{task.description || 'Nessuna descrizione'}</p>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -122,6 +127,9 @@ function TaskEditor({ task, profiles, onCancel, onSaved }) {
   const [assignee, setAssignee] = useState(selectedAssignee)
   const [dueDate, setDueDate] = useState(task.due_date || '')
   const [priority, setPriority] = useState(task.priority)
+  const [recurrenceRule, setRecurrenceRule] = useState(task.recurrence_rule || 'none')
+  const [visibility, setVisibility] = useState(task.visibility || 'list')
+  const [visibleTo, setVisibleTo] = useState(task.visible_to || [])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -141,7 +149,11 @@ function TaskEditor({ task, profiles, onCancel, onSaved }) {
         description: description.trim() || null,
         assignee,
         due_date: dueDate || null,
-        priority
+        priority,
+        recurrence_rule: recurrenceRule,
+        recurrence_day: null,
+        visibility,
+        visible_to: visibility === 'selected' ? Array.from(new Set([task.created_by, ...visibleTo])) : []
       })
       .eq('id', task.id)
       .eq('updated_at', expectedUpdatedAt)
@@ -175,6 +187,35 @@ function TaskEditor({ task, profiles, onCancel, onSaved }) {
             <option value="medium">Media</option>
             <option value="high">Alta</option>
           </select>
+          <select value={recurrenceRule} onChange={event => setRecurrenceRule(event.target.value)} className="border rounded px-3 py-2" aria-label="Ricorrenza">
+            <option value="none">Nessuna ricorrenza</option>
+            <option value="weekly">Ogni settimana</option>
+            <option value="monthly">Ogni mese</option>
+          </select>
+          <select value={visibility} onChange={event => setVisibility(event.target.value)} className="border rounded px-3 py-2" aria-label="Visibilità">
+            <option value="list">Tutta la lista</option>
+            <option value="selected">Solo utenti scelti</option>
+          </select>
+          {visibility === 'selected' && (
+            <fieldset className="border rounded p-2 md:col-span-4">
+              <legend className="px-1 text-xs">Utenti autorizzati</legend>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {profiles.map(profile => (
+                  <label key={profile.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={profile.id === task.created_by || visibleTo.includes(profile.id)}
+                      disabled={profile.id === task.created_by}
+                      onChange={event => setVisibleTo(current => event.target.checked
+                        ? [...new Set([...current, profile.id])]
+                        : current.filter(id => id !== profile.id))}
+                    />
+                    {profile.full_name || profile.email}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
           <div className="flex items-center gap-2 md:col-span-2">
             <button type="submit" disabled={saving} className="px-3 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-60">{saving ? 'Salvataggio...' : 'Salva'}</button>
             <button type="button" onClick={onCancel} className="px-3 py-2 border rounded text-sm">Annulla</button>

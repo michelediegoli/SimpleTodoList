@@ -59,6 +59,10 @@ create table if not exists tasks (
   priority task_priority default 'medium',
   status task_status default 'todo',
   completed_at timestamptz,
+  recurrence_rule text default 'none',
+  recurrence_day integer,
+  visibility text default 'list',
+  visible_to uuid[] default '{}'::uuid[],
   metadata jsonb default '{}'::jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -78,6 +82,10 @@ alter table tasks add column if not exists due_date date;
 alter table tasks add column if not exists priority task_priority default 'medium';
 alter table tasks add column if not exists status task_status default 'todo';
 alter table tasks add column if not exists completed_at timestamptz;
+alter table tasks add column if not exists recurrence_rule text default 'none';
+alter table tasks add column if not exists recurrence_day integer;
+alter table tasks add column if not exists visibility text default 'list';
+alter table tasks add column if not exists visible_to uuid[] default '{}'::uuid[];
 alter table tasks add column if not exists metadata jsonb default '{}'::jsonb;
 alter table tasks add column if not exists created_at timestamptz default now();
 alter table tasks add column if not exists updated_at timestamptz default now();
@@ -87,6 +95,18 @@ create index if not exists idx_tasks_list_id on tasks(list_id);
 create index if not exists idx_tasks_assignee on tasks(assignee);
 create index if not exists idx_tasks_due_date on tasks(due_date);
 create index if not exists idx_tasks_status on tasks(status);
+create index if not exists idx_tasks_visible_to on tasks using gin(visible_to);
+
+-- Valori ammessi per ricorrenza e visibilita.
+alter table tasks drop constraint if exists tasks_recurrence_rule_check;
+alter table tasks add constraint tasks_recurrence_rule_check
+  check (recurrence_rule in ('none', 'weekly', 'monthly'));
+alter table tasks drop constraint if exists tasks_recurrence_day_check;
+alter table tasks add constraint tasks_recurrence_day_check
+  check (recurrence_day is null or recurrence_day between 1 and 31);
+alter table tasks drop constraint if exists tasks_visibility_check;
+alter table tasks add constraint tasks_visibility_check
+  check (visibility in ('list', 'selected'));
 
 -- 4) Trigger per updated_at e completed_at
 create or replace function public.trigger_set_timestamp()
@@ -115,6 +135,41 @@ drop trigger if exists set_timestamp on tasks;
 create trigger set_timestamp
 before insert or update on tasks
 for each row execute function public.trigger_set_timestamp();
+
+-- Crea la prossima occorrenza dopo il completamento.
+create or replace function public.create_next_recurring_task()
+returns trigger
+security definer
+set search_path = public
+language plpgsql as $$
+declare
+  next_due_date date;
+begin
+  if new.status = 'completed'
+     and old.status is distinct from new.status
+     and new.recurrence_rule in ('weekly', 'monthly')
+     and new.due_date is not null then
+    next_due_date := (new.due_date + case
+      when new.recurrence_rule = 'weekly' then interval '7 days'
+      else interval '1 month'
+    end)::date;
+
+    insert into public.tasks (
+      list_id, title, description, assignee, created_by, due_date,
+      priority, status, recurrence_rule, recurrence_day, visibility, visible_to
+    ) values (
+      new.list_id, new.title, new.description, new.assignee, new.created_by, next_due_date,
+      new.priority, 'todo', new.recurrence_rule, new.recurrence_day, new.visibility, new.visible_to
+    );
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists create_next_recurring_task on tasks;
+create trigger create_next_recurring_task
+after update on tasks
+for each row execute function public.create_next_recurring_task();
 
 -- 5) Helper per admin check
 create or replace function public.is_admin()
@@ -307,7 +362,10 @@ drop policy if exists tasks_select_member_or_admin on tasks;
 create policy tasks_select_member_or_admin on tasks
   for select using (
     public.is_admin() OR
-    public.is_list_member(tasks.list_id)
+    (
+      public.is_list_member(tasks.list_id) AND
+      (tasks.visibility = 'list' OR auth.uid() = tasks.created_by OR auth.uid() = any(tasks.visible_to))
+    )
   );
 
 drop policy if exists tasks_insert_member_or_admin on tasks;
@@ -317,7 +375,8 @@ create policy tasks_insert_member_or_admin on tasks
     (
       auth.uid() IS NOT NULL AND
       created_by = auth.uid() AND
-      public.is_list_member(list_id, auth.uid())
+      public.is_list_member(list_id, auth.uid()) AND
+      (visibility = 'list' OR auth.uid() = any(visible_to) OR visibility = 'selected')
     )
   );
 
@@ -326,11 +385,17 @@ drop policy if exists tasks_update_list_member_or_admin on tasks;
 create policy tasks_update_list_member_or_admin on tasks
   for update using (
     public.is_admin() OR
-    public.is_list_member(tasks.list_id)
+    (
+      public.is_list_member(tasks.list_id) AND
+      (tasks.visibility = 'list' OR auth.uid() = tasks.created_by OR auth.uid() = any(tasks.visible_to))
+    )
   )
   with check (
     public.is_admin() OR
-    public.is_list_member(list_id)
+    (
+      public.is_list_member(list_id) AND
+      (visibility = 'list' OR auth.uid() = created_by OR auth.uid() = any(visible_to))
+    )
   );
 
 drop policy if exists tasks_delete_owner_or_admin on tasks;

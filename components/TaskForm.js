@@ -11,6 +11,9 @@ export default function TaskForm({ user, profiles, onCreated }) {
   const [assignee, setAssignee] = useState('Altro')
   const [dueDate, setDueDate] = useState('')
   const [priority, setPriority] = useState('medium')
+  const [recurrenceRule, setRecurrenceRule] = useState('none')
+  const [visibility, setVisibility] = useState('list')
+  const [visibleTo, setVisibleTo] = useState(() => user?.id ? [user.id] : [])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const assigneeNames = getAssigneeNames(profiles)
@@ -43,7 +46,11 @@ export default function TaskForm({ user, profiles, onCreated }) {
         due_date: dueDate || null,
         priority,
         status: 'todo',
-        created_by: user.id
+        created_by: user.id,
+        recurrence_rule: recurrenceRule,
+        recurrence_day: null,
+        visibility,
+        visible_to: visibility === 'selected' ? Array.from(new Set([user.id, ...visibleTo])) : []
       }])
 
     setSaving(false)
@@ -54,6 +61,7 @@ export default function TaskForm({ user, profiles, onCreated }) {
     }
 
     setTitle(''); setDescription(''); setAssignee('Altro'); setDueDate(''); setPriority('medium')
+    setRecurrenceRule('none'); setVisibility('list'); setVisibleTo([user.id])
     onCreated && onCreated()
   }
 
@@ -81,10 +89,40 @@ export default function TaskForm({ user, profiles, onCreated }) {
           {assigneeNames.map(name => <option key={name} value={name}>{name}</option>)}
         </select>
         <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="border rounded px-3 py-2 flex-1 min-w-0 md:flex-none" />
+        <select value={recurrenceRule} onChange={e => setRecurrenceRule(e.target.value)} className="border rounded px-3 py-2 flex-1 min-w-0" aria-label="Ricorrenza">
+          <option value="none">Nessuna ricorrenza</option>
+          <option value="weekly">Ogni settimana</option>
+          <option value="monthly">Ogni mese</option>
+        </select>
+        <select value={visibility} onChange={e => setVisibility(e.target.value)} className="border rounded px-3 py-2 flex-1 min-w-0" aria-label="Visibilità">
+          <option value="list">Visibile a tutta la lista</option>
+          <option value="selected">Solo utenti scelti</option>
+        </select>
         <button type="submit" className="basis-full px-4 py-2 bg-green-600 text-white rounded disabled:opacity-60 md:basis-auto" disabled={saving || !isListConfigured}>
           {saving ? 'Creazione...' : 'Crea'}
         </button>
       </div>
+
+      {visibility === 'selected' && (
+        <fieldset className="mt-3 border rounded p-3">
+          <legend className="px-1 text-sm font-medium">Utenti autorizzati</legend>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {profiles.map(profile => (
+              <label key={profile.id} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={profile.id === user.id || visibleTo.includes(profile.id)}
+                  disabled={profile.id === user.id}
+                  onChange={event => setVisibleTo(current => event.target.checked
+                    ? [...new Set([...current, profile.id])]
+                    : current.filter(id => id !== profile.id))}
+                />
+                {profile.full_name || profile.email}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
     </form>
   )
 }
