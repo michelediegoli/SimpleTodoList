@@ -24,6 +24,8 @@ export default function Home() {
   const [needsPassword, setNeedsPassword] = useState(false)
   const [authMessage, setAuthMessage] = useState('')
   const [filters, setFilters] = useState(initialFilters)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const assigneeNames = getAssigneeNames(profiles)
 
   useEffect(() => {
@@ -123,13 +125,25 @@ export default function Home() {
       task.due_date
     ].filter(Boolean).join(' ').toLowerCase().includes(q)
 
-    const matchesStatus = filters.status === 'all' || task.status === filters.status
+    const matchesStatus = filters.status === 'all' || (
+      filters.status === 'none' ? !task.status : task.status === filters.status
+    )
     const matchesAssignee = filters.assignee === 'all' || task.assignee === filters.assignee
     const matchesPriority = filters.priority === 'all' || task.priority === filters.priority
     const matchesDueDate = !filters.dueDate || task.due_date === filters.dueDate
 
     return matchesQuery && matchesStatus && matchesAssignee && matchesPriority && matchesDueDate
   })
+  const totalPages = Math.max(1, Math.ceil(filteredTasks.length / pageSize))
+  const paginatedTasks = filteredTasks.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, pageSize])
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages])
 
   if (!authReady) {
     return <div className="min-h-screen flex items-center justify-center">Caricamento...</div>
@@ -175,7 +189,7 @@ export default function Home() {
         </section>
 
         <section className="mb-8">
-          <div className="bg-white p-4 rounded shadow mb-4">
+          <div className="bg-white p-4 rounded shadow mb-4 border-2 border-gray-400">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-2">
               <input
                 value={filters.query}
@@ -190,9 +204,8 @@ export default function Home() {
                 className="border rounded px-3 py-2"
               >
                 <option value="all">Tutti gli stati</option>
-                <option value="todo">Da fare</option>
-                <option value="in_progress">In corso</option>
-                <option value="completed">Completata</option>
+                <option value="none">Nessuno stato</option>
+                <option value="completed">Completato</option>
               </select>
 
               <select
@@ -223,7 +236,7 @@ export default function Home() {
               />
 
               <button
-                onClick={() => setFilters(initialFilters)}
+                onClick={() => setFilters({ ...initialFilters })}
                 className="border border-gray-300 rounded px-3 py-2 text-gray-700 bg-gray-100"
               >
                 Reimposta
@@ -231,7 +244,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="overflow-hidden bg-white rounded shadow">
+          <div className="overflow-hidden bg-white rounded shadow border-2 border-sky-400">
             <table className="w-full table-fixed text-left">
               <thead className="hidden bg-gray-100 md:table-header-group">
                 <tr>
@@ -250,13 +263,54 @@ export default function Home() {
                 ) : filteredTasks.length === 0 ? (
                   <tr><td colSpan="7" className="px-3 py-4 text-gray-500">Nessuna attività trovata.</td></tr>
                 ) : (
-                  filteredTasks.map(task => (
+                  paginatedTasks.map(task => (
                     <TaskItem key={task.id} task={task} profiles={profiles} currentUser={user} onUpdated={() => fetchTasks()} />
                   ))
                 )}
               </tbody>
             </table>
           </div>
+
+          {filteredTasks.length > 0 && (
+            <div className="mt-4 flex flex-col gap-3 text-sm md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-2">
+                <label htmlFor="page-size">Task per pagina</label>
+                <select
+                  id="page-size"
+                  value={pageSize}
+                  onChange={event => setPageSize(Number(event.target.value))}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+                <span className="text-gray-500">
+                  {filteredTasks.length} task totali
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                  className="border rounded px-3 py-1 disabled:opacity-40"
+                >
+                  Precedente
+                </button>
+                <span>Pagina {currentPage} di {totalPages}</span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                  className="border rounded px-3 py-1 disabled:opacity-40"
+                >
+                  Successiva
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       </main>
     </div>

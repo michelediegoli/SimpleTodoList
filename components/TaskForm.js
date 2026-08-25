@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { getAssigneeNames } from '../lib/assignees'
+import { formatPersonName, getAssigneeNames, isSelectableProfile } from '../lib/assignees'
 
 const LIST_ID = process.env.NEXT_PUBLIC_SUPABASE_LIST_ID
 const isListConfigured = Boolean(LIST_ID) && LIST_ID !== 'the-list-uuid-to-use'
@@ -8,7 +8,7 @@ const isListConfigured = Boolean(LIST_ID) && LIST_ID !== 'the-list-uuid-to-use'
 export default function TaskForm({ user, profiles, onCreated }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [assignee, setAssignee] = useState('Altro')
+  const [assignee, setAssignee] = useState(getAssigneeNames()[0])
   const [dueDate, setDueDate] = useState('')
   const [priority, setPriority] = useState('medium')
   const [recurrenceRule, setRecurrenceRule] = useState('none')
@@ -45,7 +45,7 @@ export default function TaskForm({ user, profiles, onCreated }) {
         assignee,
         due_date: dueDate || null,
         priority,
-        status: 'todo',
+        status: null,
         created_by: user.id,
         recurrence_rule: recurrenceRule,
         recurrence_day: null,
@@ -60,13 +60,13 @@ export default function TaskForm({ user, profiles, onCreated }) {
       return
     }
 
-    setTitle(''); setDescription(''); setAssignee('Altro'); setDueDate(''); setPriority('medium')
+    setTitle(''); setDescription(''); setAssignee(getAssigneeNames()[0]); setDueDate(''); setPriority('medium')
     setRecurrenceRule('none'); setVisibility('list'); setVisibleTo([user.id])
     onCreated && onCreated()
   }
 
   return (
-    <form onSubmit={handleCreate} className="bg-white p-4 rounded shadow">
+    <form onSubmit={handleCreate} className="bg-white p-4 rounded shadow border-2 border-green-500">
       {error && (
         <div className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
@@ -107,7 +107,7 @@ export default function TaskForm({ user, profiles, onCreated }) {
         <fieldset className="mt-3 border rounded p-3">
           <legend className="px-1 text-sm font-medium">Utenti autorizzati</legend>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {profiles.map(profile => (
+            {profiles.filter(isSelectableProfile).map(profile => (
               <label key={profile.id} className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -117,7 +117,7 @@ export default function TaskForm({ user, profiles, onCreated }) {
                     ? [...new Set([...current, profile.id])]
                     : current.filter(id => id !== profile.id))}
                 />
-                {profile.full_name || profile.email}
+                {profile.full_name ? formatPersonName(profile.full_name) : profile.email}
               </label>
             ))}
           </div>
