@@ -14,7 +14,7 @@ end $$;
 
 do $$
 begin
-  create type task_status as enum ('todo','in_progress','completed');
+  create type task_status as enum ('completed');
 exception
   when duplicate_object then null;
 end $$;
@@ -57,7 +57,7 @@ create table if not exists tasks (
   created_by uuid references auth.users (id),
   due_date date,
   priority task_priority default 'medium',
-  status task_status default 'todo',
+  status task_status default null,
   completed_at timestamptz,
   recurrence_rule text default 'none',
   recurrence_day integer,
@@ -80,7 +80,7 @@ alter table tasks alter column assignee type text using assignee::text;
 alter table tasks add column if not exists created_by uuid references auth.users (id);
 alter table tasks add column if not exists due_date date;
 alter table tasks add column if not exists priority task_priority default 'medium';
-alter table tasks add column if not exists status task_status default 'todo';
+alter table tasks add column if not exists status task_status default null;
 alter table tasks add column if not exists completed_at timestamptz;
 alter table tasks add column if not exists recurrence_rule text default 'none';
 alter table tasks add column if not exists recurrence_day integer;
@@ -89,6 +89,11 @@ alter table tasks add column if not exists visible_to uuid[] default '{}'::uuid[
 alter table tasks add column if not exists metadata jsonb default '{}'::jsonb;
 alter table tasks add column if not exists created_at timestamptz default now();
 alter table tasks add column if not exists updated_at timestamptz default now();
+
+-- Migrazione dei task creati con i precedenti stati.
+alter table tasks alter column status drop default;
+update tasks set status = null where status::text in ('in_progress', 'todo');
+update tasks set assignee = null where lower(trim(assignee)) = 'altro';
 
 -- Indici utili
 create index if not exists idx_tasks_list_id on tasks(list_id);
@@ -159,7 +164,7 @@ begin
       priority, status, recurrence_rule, recurrence_day, visibility, visible_to
     ) values (
       new.list_id, new.title, new.description, new.assignee, new.created_by, next_due_date,
-      new.priority, 'todo', new.recurrence_rule, new.recurrence_day, new.visibility, new.visible_to
+      new.priority, null, new.recurrence_rule, new.recurrence_day, new.visibility, new.visible_to
     );
   end if;
   return new;
@@ -399,9 +404,11 @@ create policy tasks_update_list_member_or_admin on tasks
   );
 
 drop policy if exists tasks_delete_owner_or_admin on tasks;
-create policy tasks_delete_owner_or_admin on tasks
+drop policy if exists tasks_delete_creator_owner_or_admin on tasks;
+create policy tasks_delete_creator_owner_or_admin on tasks
   for delete using (
     public.is_admin() OR
+    tasks.created_by = auth.uid() OR
     EXISTS (SELECT 1 FROM list_members lm WHERE lm.list_id = tasks.list_id AND lm.user_id = auth.uid() AND lm.role = 'owner')
   );
 

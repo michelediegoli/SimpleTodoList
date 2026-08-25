@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { assigneeNames } from '../lib/assignees'
+import { assigneeNames, formatPersonName, isSelectableProfile } from '../lib/assignees'
 import dayjs from 'dayjs'
 
 const statusLabels = {
-  todo: 'Da fare',
-  in_progress: 'In corso',
-  completed: 'Completata'
+  completed: 'Completato'
 }
 
 const priorityLabels = {
@@ -17,7 +15,7 @@ const priorityLabels = {
 
 export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
   const [editing, setEditing] = useState(false)
-  const assigneeLabel = task.assignee || 'Altro'
+  const assigneeLabel = task.assignee || 'Nessuno'
   const isOwnerOrAssignee = task.created_by === currentUser.id
 
   async function updateStatus(newStatus) {
@@ -37,10 +35,18 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
 
   async function deleteTask() {
     if (!confirm('Eliminare questa attività?')) return
-    const { error } = await supabase.from('tasks').delete().eq('id', task.id)
+    const { data, error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', task.id)
+      .select('id')
     if (error) {
       console.error(error)
       alert(error.message)
+      return
+    }
+    if (!data?.length) {
+      alert('Il task non è stato cancellato. Potrebbe essere stato già rimosso o non hai i permessi necessari.')
       return
     }
     onUpdated && onUpdated()
@@ -75,7 +81,7 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
         <td className="px-3 py-3 text-sm">{assigneeLabel}</td>
         <td className="px-3 py-3 text-sm whitespace-nowrap">{task.due_date ? dayjs(task.due_date).format('DD/MM/YYYY') : '—'}</td>
         <td className="px-3 py-3 text-sm">{priorityLabels[task.priority] || task.priority}</td>
-        <td className="px-3 py-3 text-sm">{statusLabels[task.status] || task.status}</td>
+        <td className="px-3 py-3 text-sm">{statusLabels[task.status] || 'Nessuno stato'}</td>
         <td className="px-3 py-3">
           {actions}
         </td>
@@ -108,7 +114,7 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
               </div>
               <div>
                 <dt className="text-gray-500">Stato</dt>
-                <dd>{statusLabels[task.status] || task.status}</dd>
+                <dd>{statusLabels[task.status] || 'Nessuno stato'}</dd>
               </div>
             </dl>
             {actions}
@@ -123,7 +129,7 @@ function TaskEditor({ task, profiles, onCancel, onSaved }) {
   const [expectedUpdatedAt] = useState(task.updated_at)
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description || '')
-  const selectedAssignee = assigneeNames.includes(task.assignee) ? task.assignee : 'Altro'
+  const selectedAssignee = assigneeNames.includes(task.assignee) ? task.assignee : assigneeNames[0]
   const [assignee, setAssignee] = useState(selectedAssignee)
   const [dueDate, setDueDate] = useState(task.due_date || '')
   const [priority, setPriority] = useState(task.priority)
@@ -200,7 +206,7 @@ function TaskEditor({ task, profiles, onCancel, onSaved }) {
             <fieldset className="border rounded p-2 md:col-span-4">
               <legend className="px-1 text-xs">Utenti autorizzati</legend>
               <div className="flex flex-wrap gap-x-4 gap-y-2">
-                {profiles.map(profile => (
+                {profiles.filter(isSelectableProfile).map(profile => (
                   <label key={profile.id} className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
@@ -210,7 +216,7 @@ function TaskEditor({ task, profiles, onCancel, onSaved }) {
                         ? [...new Set([...current, profile.id])]
                         : current.filter(id => id !== profile.id))}
                     />
-                    {profile.full_name || profile.email}
+                    {profile.full_name ? formatPersonName(profile.full_name) : profile.email}
                   </label>
                 ))}
               </div>
@@ -232,11 +238,10 @@ function TaskActions({ task, updateStatus, deleteTask, isOwnerOrAssignee, onEdit
     <div className="flex flex-wrap gap-2">
       {task.status !== 'completed' ? (
         <>
-          <button onClick={() => updateStatus('in_progress')} className="px-2 py-1 bg-yellow-500 text-white rounded text-xs">In corso</button>
           <button onClick={() => updateStatus('completed')} className="px-2 py-1 bg-green-600 text-white rounded text-xs">Completa</button>
         </>
       ) : (
-        <button onClick={() => updateStatus('todo')} className="px-2 py-1 bg-gray-300 rounded text-xs">Riapri</button>
+        <button onClick={() => updateStatus(null)} className="px-2 py-1 bg-gray-300 rounded text-xs">Rimuovi stato</button>
       )}
 
       <button onClick={onEdit} className="px-2 py-1 bg-blue-600 text-white rounded text-xs">Modifica</button>
