@@ -16,7 +16,6 @@ const priorityLabels = {
 export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
   const [editing, setEditing] = useState(false)
   const assigneeLabel = task.assignee || 'Nessuno'
-  const isOwnerOrAssignee = task.created_by === currentUser.id
 
   async function updateStatus(newStatus) {
     const { error } = await supabase
@@ -64,7 +63,6 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
       task={task}
       updateStatus={updateStatus}
       deleteTask={deleteTask}
-      isOwnerOrAssignee={isOwnerOrAssignee}
       onEdit={() => setEditing(true)}
     />
   )
@@ -233,7 +231,7 @@ function TaskEditor({ task, profiles, onCancel, onSaved }) {
   )
 }
 
-function TaskActions({ task, updateStatus, deleteTask, isOwnerOrAssignee, onEdit }) {
+function TaskActions({ task, updateStatus, deleteTask, onEdit }) {
   return (
     <div className="flex flex-wrap gap-2">
       {task.status !== 'completed' ? (
@@ -246,11 +244,7 @@ function TaskActions({ task, updateStatus, deleteTask, isOwnerOrAssignee, onEdit
 
       <button onClick={onEdit} className="px-2 py-1 bg-blue-600 text-white rounded text-xs">Modifica</button>
 
-      {isOwnerOrAssignee && (
-        <>
-          <button onClick={deleteTask} className="px-2 py-1 bg-red-500 text-white rounded text-xs">Elimina</button>
-        </>
-      )}
+      <button onClick={deleteTask} className="px-2 py-1 bg-red-500 text-white rounded text-xs">Elimina</button>
     </div>
   )
 }

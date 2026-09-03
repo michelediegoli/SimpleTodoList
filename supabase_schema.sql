@@ -405,11 +405,11 @@ create policy tasks_update_list_member_or_admin on tasks
 
 drop policy if exists tasks_delete_owner_or_admin on tasks;
 drop policy if exists tasks_delete_creator_owner_or_admin on tasks;
-create policy tasks_delete_creator_owner_or_admin on tasks
+drop policy if exists tasks_delete_list_member_or_admin on tasks;
+create policy tasks_delete_list_member_or_admin on tasks
   for delete using (
     public.is_admin() OR
-    tasks.created_by = auth.uid() OR
-    EXISTS (SELECT 1 FROM list_members lm WHERE lm.list_id = tasks.list_id AND lm.user_id = auth.uid() AND lm.role = 'owner')
+    public.is_list_member(tasks.list_id)
   );
 
 -- Fine script
