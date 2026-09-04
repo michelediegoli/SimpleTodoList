@@ -165,7 +165,11 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <header className="max-w-6xl mx-auto mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold">Simple Todo — Lista condivisa</h1>
+        <img
+          src="/reabilita.jpeg"
+          alt="Reabilita"
+          className="h-auto w-full max-w-3xl object-contain object-left"
+        />
         <div className="mt-3 text-sm text-gray-600">Connesso come <strong>{user.email}</strong></div>
         <div className="mt-2">
           <button
