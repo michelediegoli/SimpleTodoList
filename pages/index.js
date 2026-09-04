@@ -168,7 +168,7 @@ export default function Home() {
         <img
           src="/reabilita.jpeg"
           alt="Reabilita"
-          className="h-auto w-full max-w-3xl object-contain object-left"
+          className="block h-auto w-auto max-w-full object-contain object-left"
         />
         <div className="mt-3 text-sm text-gray-600">Connesso come <strong>{user.email}</strong></div>
         <div className="mt-2">
