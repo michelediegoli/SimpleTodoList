@@ -168,10 +168,17 @@ export default function Home() {
         <img
           src="/reabilita.jpeg"
           alt="Reabilita"
-          className="block h-auto w-auto max-w-full object-contain object-left"
+          className="block h-auto w-auto max-w-full object-contain object-left print:hidden"
         />
         <div className="mt-3 text-sm text-gray-600">Connesso come <strong>{user.email}</strong></div>
-        <div className="mt-2">
+        <div className="mt-2 flex items-center gap-4 print:hidden">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          >
+            Stampa / Salva PDF
+          </button>
           <button
             onClick={async () => { await supabase.auth.signOut(); setUser(null) }}
             className="text-sm text-red-600 hover:underline"
@@ -188,12 +195,12 @@ export default function Home() {
           </div>
         )}
 
-        <section className="mb-6">
+        <section className="mb-6 print:hidden">
           <TaskForm user={user} profiles={profiles} onCreated={() => fetchTasks()} />
         </section>
 
         <section className="mb-8">
-          <div className="bg-white p-4 rounded shadow mb-4 border-2 border-gray-400">
+          <div className="bg-white p-4 rounded shadow mb-4 border-2 border-gray-400 print:hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-2">
               <input
                 value={filters.query}
@@ -248,7 +255,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="overflow-hidden bg-white rounded shadow border-2 border-sky-400">
+          <div className="task-results overflow-hidden bg-white rounded shadow border-2 border-sky-400">
             <table className="w-full table-fixed text-left">
               <thead className="hidden bg-gray-100 md:table-header-group">
                 <tr>
@@ -276,7 +283,7 @@ export default function Home() {
           </div>
 
           {filteredTasks.length > 0 && (
-            <div className="mt-4 flex flex-col gap-3 text-sm md:flex-row md:items-center md:justify-between">
+            <div className="mt-4 flex flex-col gap-3 text-sm md:flex-row md:items-center md:justify-between print:hidden">
               <div className="flex items-center gap-2">
                 <label htmlFor="page-size">Task per pagina</label>
                 <select

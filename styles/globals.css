@@ -4,3 +4,59 @@
 
 /* Small UI tweaks */
 body { @apply bg-gray-50; }
+
+@media print {
+	@page {
+		margin: 8mm;
+	}
+
+	body {
+		background: #fff;
+		font-size: 9pt;
+	}
+
+	#__next > div {
+		min-height: 0 !important;
+		padding: 0 !important;
+	}
+
+	#__next header {
+		margin-bottom: 4mm !important;
+	}
+
+	#__next main {
+		max-width: none !important;
+	}
+
+	.task-results th,
+	.task-results td {
+		padding: 4px 5px !important;
+		font-size: 8pt !important;
+	}
+
+	.task-results {
+		overflow: visible !important;
+		border: 0 !important;
+		box-shadow: none !important;
+	}
+
+	.task-results table {
+		table-layout: auto;
+	}
+
+	.task-results thead {
+		display: table-header-group !important;
+	}
+
+	.task-results .task-row-desktop {
+		display: table-row !important;
+	}
+
+	.task-results .task-row-mobile {
+		display: none !important;
+	}
+
+	.task-results tr {
+		break-inside: avoid;
+	}
+}

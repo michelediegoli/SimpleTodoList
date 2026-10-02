@@ -69,7 +69,7 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
 
   return (
     <>
-      <tr className="hidden border-t border-gray-200 align-top md:table-row">
+      <tr className="task-row-desktop hidden border-t border-gray-200 align-top md:table-row">
         <td className="px-3 py-3 font-medium">
           {task.title}
           {task.priority === 'high' && <span className="ml-2 text-red-600 text-xs">Alta</span>}
@@ -83,12 +83,12 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
           {statusLabels[task.status] || 'Nessuno stato'}
           <CompletedDate taskId={task.id} completedAt={task.completed_at} onUpdated={onUpdated} />
         </td>
-        <td className="px-3 py-3">
+        <td className="px-3 py-3 print:hidden">
           {actions}
         </td>
       </tr>
 
-      <tr className="border-t border-gray-200 md:hidden">
+      <tr className="task-row-mobile border-t border-gray-200 md:hidden">
         <td colSpan="7" className="p-3">
           <article className="space-y-3">
             <div className="flex items-start justify-between gap-3">
