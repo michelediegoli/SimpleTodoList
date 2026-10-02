@@ -79,7 +79,10 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
         <td className="px-3 py-3 text-sm">{assigneeLabel}</td>
         <td className="px-3 py-3 text-sm whitespace-nowrap">{task.due_date ? dayjs(task.due_date).format('DD/MM/YYYY') : '—'}</td>
         <td className="px-3 py-3 text-sm">{priorityLabels[task.priority] || task.priority}</td>
-        <td className="px-3 py-3 text-sm">{statusLabels[task.status] || 'Nessuno stato'}</td>
+        <td className="px-3 py-3 text-sm">
+          {statusLabels[task.status] || 'Nessuno stato'}
+          <CompletedDate taskId={task.id} completedAt={task.completed_at} onUpdated={onUpdated} />
+        </td>
         <td className="px-3 py-3">
           {actions}
         </td>
@@ -112,7 +115,10 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
               </div>
               <div>
                 <dt className="text-gray-500">Stato</dt>
-                <dd>{statusLabels[task.status] || 'Nessuno stato'}</dd>
+                <dd>
+                  {statusLabels[task.status] || 'Nessuno stato'}
+                  <CompletedDate taskId={task.id} completedAt={task.completed_at} onUpdated={onUpdated} />
+                </dd>
               </div>
             </dl>
             {actions}
@@ -120,6 +126,76 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
         </td>
       </tr>
     </>
+  )
+}
+
+function CompletedDate({ taskId, completedAt, onUpdated }) {
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  if (!completedAt) return null
+
+  const dateValue = dayjs(completedAt).format('YYYY-MM-DD')
+
+  async function saveDate(event) {
+    const selectedDate = event.target.value
+    if (!selectedDate || selectedDate === dateValue) {
+      setEditing(false)
+      return
+    }
+
+    const [year, month, day] = selectedDate.split('-').map(Number)
+    const updatedCompletion = dayjs(completedAt)
+      .date(1)
+      .year(year)
+      .month(month - 1)
+      .date(day)
+      .toISOString()
+
+    setSaving(true)
+    const { error } = await supabase
+      .from('tasks')
+      .update({ completed_at: updatedCompletion })
+      .eq('id', taskId)
+    setSaving(false)
+
+    if (error) {
+      console.error(error)
+      alert(error.message)
+      return
+    }
+
+    setEditing(false)
+    onUpdated && onUpdated()
+  }
+
+  return (
+    <div className="mt-1 text-xs text-gray-500">
+      {editing ? (
+        <span className="inline-flex items-center gap-2">
+          <input
+            type="date"
+            value={dateValue}
+            onChange={saveDate}
+            disabled={saving}
+            aria-label="Modifica data di completamento"
+            className="rounded border border-gray-300 px-1 py-0.5 text-gray-700 disabled:opacity-60"
+          />
+          <button type="button" onClick={() => setEditing(false)} disabled={saving} className="underline">
+            Annulla
+          </button>
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          aria-label={`Modifica data di completamento: ${dayjs(completedAt).format('DD/MM/YYYY')}`}
+          className="underline decoration-dotted underline-offset-2 hover:text-gray-800"
+        >
+          {dayjs(completedAt).format('DD/MM/YYYY')}
+        </button>
+      )}
+    </div>
   )
 }
 
