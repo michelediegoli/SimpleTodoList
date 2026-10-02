@@ -254,9 +254,9 @@ export default function Home() {
                 <tr>
                   <th className="px-3 py-3 font-semibold">Titolo</th>
                   <th className="px-3 py-3 font-semibold">Descrizione</th>
-                  <th className="px-3 py-3 font-semibold">Assegnatario</th>
                   <th className="px-3 py-3 font-semibold">Scadenza</th>
                   <th className="px-3 py-3 font-semibold">Priorità</th>
+                  <th className="px-3 py-3 font-semibold">Assegnato a</th>
                   <th className="px-3 py-3 font-semibold">Stato</th>
                   <th className="px-3 py-3 font-semibold">Azioni</th>
                 </tr>

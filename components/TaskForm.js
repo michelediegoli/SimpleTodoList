@@ -8,7 +8,7 @@ const isListConfigured = Boolean(LIST_ID) && LIST_ID !== 'the-list-uuid-to-use'
 export default function TaskForm({ user, profiles, onCreated }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [assignee, setAssignee] = useState(getAssigneeNames()[0])
+  const [assignee, setAssignee] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [priority, setPriority] = useState('medium')
   const [recurrenceRule, setRecurrenceRule] = useState('none')
@@ -42,7 +42,7 @@ export default function TaskForm({ user, profiles, onCreated }) {
         list_id: LIST_ID,
         title: title.trim(),
         description: description.trim() || null,
-        assignee,
+        assignee: assignee || null,
         due_date: dueDate || null,
         priority,
         status: null,
@@ -60,7 +60,7 @@ export default function TaskForm({ user, profiles, onCreated }) {
       return
     }
 
-    setTitle(''); setDescription(''); setAssignee(getAssigneeNames()[0]); setDueDate(''); setPriority('medium')
+    setTitle(''); setDescription(''); setAssignee(''); setDueDate(''); setPriority('medium')
     setRecurrenceRule('none'); setVisibility('list'); setVisibleTo([user.id])
     onCreated && onCreated()
   }
@@ -85,7 +85,8 @@ export default function TaskForm({ user, profiles, onCreated }) {
       <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descrizione (opzionale)" className="w-full border rounded px-3 py-2 mt-2" />
 
       <div className="flex flex-wrap gap-2 mt-2">
-        <select value={assignee} onChange={e => setAssignee(e.target.value)} className="border rounded px-3 py-2 flex-1 min-w-0">
+        <select value={assignee} onChange={e => setAssignee(e.target.value)} className="border rounded px-3 py-2 flex-1 min-w-0" aria-label="Assegnato a">
+          <option value="">---</option>
           {assigneeNames.map(name => <option key={name} value={name}>{name}</option>)}
         </select>
         <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="border rounded px-3 py-2 flex-1 min-w-0 md:flex-none" />

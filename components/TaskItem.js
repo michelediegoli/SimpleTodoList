@@ -76,9 +76,9 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
           {task.recurrence_rule === 'monthly' && <span className="ml-2 text-blue-600 text-xs">Mensile</span>}
         </td>
         <td className="px-3 py-3 text-sm text-gray-700 break-words">{task.description || '—'}</td>
-        <td className="px-3 py-3 text-sm">{assigneeLabel}</td>
         <td className="px-3 py-3 text-sm whitespace-nowrap">{task.due_date ? dayjs(task.due_date).format('DD/MM/YYYY') : '—'}</td>
         <td className="px-3 py-3 text-sm">{priorityLabels[task.priority] || task.priority}</td>
+        <td className="px-3 py-3 text-sm">{assigneeLabel}</td>
         <td className="px-3 py-3 text-sm">
           {statusLabels[task.status] || 'Nessuno stato'}
           <CompletedDate taskId={task.id} completedAt={task.completed_at} onUpdated={onUpdated} />
@@ -102,7 +102,7 @@ export default function TaskItem({ task, profiles, currentUser, onUpdated }) {
             <p className="text-sm text-gray-700 break-words">{task.description || 'Nessuna descrizione'}</p>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <div>
-                <dt className="text-gray-500">Assegnatario</dt>
+                <dt className="text-gray-500">Assegnato a</dt>
                 <dd className="break-words">{assigneeLabel}</dd>
               </div>
               <div>
